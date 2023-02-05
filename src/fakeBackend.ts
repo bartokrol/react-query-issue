@@ -1,3 +1,5 @@
+import { QueryClient } from "@tanstack/react-query";
+
 export const producers = [
   {
     id: 1,
@@ -782,13 +784,11 @@ export const getCategoryProducers = (id: number) => {
     });
 
     producersData.forEach((producer) => {
-      // console.log(producer);
       producer.categoriesIds = Array.from(
         new Set([...producer.categoriesIds, id])
       );
     });
 
-    // console.log(producersData);
     return producersData;
   }
 };

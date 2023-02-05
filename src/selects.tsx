@@ -1,5 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useIsFetching, useQueries, useQuery } from "@tanstack/react-query";
+import React, { useRef, useState } from "react";
+import {
+  Query,
+  QueryCache,
+  useQueries,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   categories,
@@ -8,23 +13,49 @@ import {
 } from "./fakeBackend";
 
 export const Selects = () => {
-  const currentCategoriesRef = useRef([]);
-  const currentProducersRef = useRef([]);
   const [currentProducer, setCurrentProducer] = useState(0);
   const [currentCategory, setCurrentCategory] = useState(0);
 
-  const handleFetchCategories = async (): Promise<any> => {
+  const queryClient = useQueryClient();
+
+  const handleFetchCategories = async ({
+    queryKey,
+  }: {
+    queryKey: readonly unknown[];
+  }): Promise<any> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(getProducerCategories(currentProducer));
+        const cache: Query<any, unknown, any> | undefined = queryClient
+          .getQueryCache()
+          .find(queryKey);
+
+        if (cache && cache.state.data?.length) {
+          console.log("return cache");
+          return resolve(cache.state.data);
+        }
+
+        return resolve(getProducerCategories(currentProducer));
       }, 2000);
     });
   };
 
-  const handleFetchProducers = async (): Promise<any> => {
+  const handleFetchProducers = async ({
+    queryKey,
+  }: {
+    queryKey: readonly unknown[];
+  }): Promise<any> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(getCategoryProducers(currentCategory));
+        const cache: Query<any, unknown, any> | undefined = queryClient
+          .getQueryCache()
+          .find(queryKey);
+
+        if (cache && cache.state.data?.length) {
+          console.log("return cache");
+          return resolve(cache.state.data);
+        }
+
+        return resolve(getCategoryProducers(currentCategory));
       }, 2000);
     });
   };
@@ -34,31 +65,23 @@ export const Selects = () => {
       {
         queryKey: ["categories", { id: currentProducer }],
         queryFn: handleFetchCategories,
-        // staleTime: Infinity,
         refetchOnMount: true,
         refetchOnWindowFocus: false,
-        initialData: currentCategoriesRef.current,
-        onSuccess: (data: any) => {
-          currentCategoriesRef.current = data;
-        },
+        keepPreviousData: true,
       },
       {
         queryKey: ["producers", { id: currentCategory }],
         queryFn: handleFetchProducers,
-        // staleTime: Infinity,
         refetchOnMount: true,
         refetchOnWindowFocus: false,
-        initialData: currentProducersRef.current,
-        onSuccess: (data: any) => {
-          currentProducersRef.current = data;
-        },
+        keepPreviousData: true,
       },
     ],
   });
 
   return (
     <div>
-      {!producers.data.length || !categories.data.length ? (
+      {!producers.data?.length || !categories.data?.length ? (
         <div>{"Loading..."}</div>
       ) : (
         <>
